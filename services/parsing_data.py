@@ -1,5 +1,46 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
+import re
+
+def parse_datetime_flexible(value):
+    if not value:
+        return None
+
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+
+    value = str(value).strip()
+
+    # ubah "2026-04-19 02:36:00+00" -> "2026-04-19 02:36:00+00:00"
+    if re.match(r".*[+-]\d{2}$", value):
+        value = value + ":00"
+
+    # ubah "2026-04-19 02:36:00Z" -> "2026-04-19 02:36:00+00:00"
+    value = value.replace("Z", "+00:00")
+
+    # kalau masih pakai spasi, fromisoformat sebenarnya masih bisa
+    try:
+        dt = datetime.fromisoformat(value)
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except Exception:
+        pass
+
+    # fallback beberapa format umum
+    formats = [
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d %H:%M:%S%z",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%dT%H:%M:%S%z",
+    ]
+
+    for fmt in formats:
+        try:
+            dt = datetime.strptime(value, fmt)
+            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+        except Exception:
+            continue
+
+    return None
 
 
 def to_float(value: Any) -> float | None:
@@ -50,7 +91,8 @@ def parse_station_data(item: dict[str, Any]) -> dict[str, Any]:
 def parse_arg_observation(item: dict[str, Any]) -> dict[str, Any]:
     return {
         "id_station": str(item["id_station"]),
-        "observed_at": parse_datetime(item.get("tanggal")),
+        #"observed_at": parse_datetime(item.get("tanggal")),
+        "observed_at": parse_datetime_flexible(item.get("tanggal")),
         "rr": to_float(item.get("rr")),
         #"rr_flag": to_int(item.get("rr_flag")),
         #"raw_json": item,
@@ -60,7 +102,8 @@ def parse_arg_observation(item: dict[str, Any]) -> dict[str, Any]:
 def parse_aws_observation(item: dict[str, Any]) -> dict[str, Any]:
     return {
         "id_station": str(item["id_station"]),
-        "observed_at": parse_datetime(item.get("tanggal")),
+        #"observed_at": parse_datetime(item.get("tanggal")),
+        "observed_at": parse_datetime_flexible(item.get("tanggal")),
         "rr": to_float(item.get("rr")),
         #"rr_flag": to_int(item.get("rr_flag")),
         "pp_air": to_float(item.get("pp_air")),
@@ -90,7 +133,8 @@ def parse_aws_observation(item: dict[str, Any]) -> dict[str, Any]:
 def parse_aaws_observation(item: dict[str, Any]) -> dict[str, Any]:
     return {
         "id_station": str(item["id_station"]),
-        "observed_at": parse_datetime(item.get("tanggal")),
+        #"observed_at": parse_datetime(item.get("tanggal")),
+        "observed_at": parse_datetime_flexible(item.get("tanggal")),
         "rr": to_float(item.get("rr")),
         #"rr_flag": to_int(item.get("rr_flag")),
         "pp_air": to_float(item.get("pp_air")),
