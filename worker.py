@@ -20,33 +20,80 @@ def build_time_window(minutes_back: int = 20) -> tuple[datetime, datetime]:
     return start_time, end_time
 
 
+# def build_items(payload: list[dict], tipe_station: str) -> list[dict]:
+#     items: list[dict] = []
+#
+#     for item in payload:
+#         station_data = parse_station_data(item)
+#
+#         if tipe_station == "arg":
+#             obs_data = parse_arg_observation(item)
+#         elif tipe_station == "aws":
+#             obs_data = parse_aws_observation(item)
+#         elif tipe_station == "aaws":
+#             obs_data = parse_aaws_observation(item)
+#         else:
+#             continue
+#
+#         if not obs_data["observed_at"]:
+#             continue
+#
+#         items.append({
+#             "station": station_data,
+#             "observation": obs_data,
+#         })
+# 
+#     return items
+
 def build_items(payload: list[dict], tipe_station: str) -> list[dict]:
     items: list[dict] = []
 
-    for item in payload:
-        station_data = parse_station_data(item)
+    for idx, item in enumerate(payload):
+        try:
+            station_data = parse_station_data(item)
 
-        if tipe_station == "arg":
-            obs_data = parse_arg_observation(item)
-        elif tipe_station == "aws":
-            obs_data = parse_aws_observation(item)
-        elif tipe_station == "aaws":
-            obs_data = parse_aaws_observation(item)
-        else:
-            continue
+            if tipe_station == "arg":
+                obs_data = parse_arg_observation(item)
+            elif tipe_station == "aws":
+                obs_data = parse_aws_observation(item)
+            elif tipe_station == "aaws":
+                obs_data = parse_aaws_observation(item)
+            else:
+                print(f"[SKIP] tipe_station tidak dikenal: {tipe_station}")
+                continue
 
-        if not obs_data["observed_at"]:
-            continue
+            if not isinstance(station_data, dict):
+                print(f"[SKIP] station_data bukan dict | idx={idx} | value={station_data}")
+                continue
 
-        items.append({
-            "station": station_data,
-            "observation": obs_data,
-        })
+            if not isinstance(obs_data, dict):
+                print(f"[SKIP] obs_data bukan dict | idx={idx} | value={obs_data}")
+                continue
+
+            observed_at = obs_data.get("observed_at")
+            if not observed_at:
+                print(
+                    f"[SKIP] observed_at kosong | idx={idx} | "
+                    f"id_station={station_data.get('id_station')} | "
+                    f"tanggal={item.get('tanggal')}"
+                )
+                continue
+
+            items.append({
+                "station": station_data,
+                "observation": obs_data,
+            })
+
+        except Exception as e:
+            print(
+                f"[ERROR build_items] tipe={tipe_station} idx={idx} "
+                f"id_station={item.get('id_station')} error={repr(e)}"
+            )
 
     return items
 
 
-def run_ingest(minutes_back: int = 20):
+def run_ingest(minutes_back: int = 40):
     start_time, end_time = build_time_window(minutes_back=minutes_back)
 
     print(f"Mulai ingest dari {start_time} sampai {end_time}")
@@ -88,4 +135,4 @@ def run_ingest(minutes_back: int = 20):
 
 if __name__ == "__main__":
     Base.metadata.create_all(bind=engine)
-    run_ingest(minutes_back=20)
+    run_ingest(minutes_back=40)

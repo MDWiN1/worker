@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from services.worker import run_ingest
+from worker import run_ingest
 
 app = FastAPI()
 
