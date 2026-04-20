@@ -7,21 +7,24 @@ from models.aaws_table import ObservationAAWS
 from models.latest_data import StationLatest
 
 
-def upsert_station(db: Session, station_data: dict) -> Station:
-    station = db.get(Station, station_data["id_station"])
+# def upsert_station(db: Session, station_data: dict) -> Station:
+#     station = db.get(Station, station_data["id_station"])
+#
+#     if station:
+#         station.tipe_station = station_data["tipe_station"]
+#         station.name_station = station_data["name_station"]
+#         station.latitude = station_data["latitude"]
+#         station.longitude = station_data["longitude"]
+#         station.elevasi = station_data["elevasi"]
+#         station.nama_kota = station_data["nama_kota"]
+#     else:
+#         station = Station(**station_data)
+#         db.add(station)
+#
+#     return station
 
-    if station:
-        station.tipe_station = station_data["tipe_station"]
-        station.name_station = station_data["name_station"]
-        station.latitude = station_data["latitude"]
-        station.longitude = station_data["longitude"]
-        station.elevasi = station_data["elevasi"]
-        station.nama_kota = station_data["nama_kota"]
-    else:
-        station = Station(**station_data)
-        db.add(station)
-
-    return station
+def get_station_from_master(db: Session, station_id: str) -> Station | None:
+    return db.get(Station, station_id)
 
 
 def insert_arg_observation(db: Session, obs_data: dict) -> bool:
@@ -126,22 +129,23 @@ def upsert_station_latest(db: Session, tipe_station: str, obs_data: dict) -> Sta
 def save_arg_batch(db: Session, items: list[dict]) -> dict:
     inserted = 0
     duplicated = 0
+    skipped = 0
 
     for item in items:
         station_data = item["station"]
         obs_data = item["observation"]
 
         try:
-            upsert_station(db, station_data)
-            db.flush()
+            station = get_station_from_master(db, station_data["id_station"])
+            if not station:
+                skipped += 1
+                continue
 
             success = insert_arg_observation(db, obs_data)
             if success:
                 inserted += 1
             else:
                 duplicated += 1
-                upsert_station(db, station_data)
-                db.flush()
 
             upsert_station_latest(db, "arg", obs_data)
             db.commit()
@@ -150,28 +154,33 @@ def save_arg_batch(db: Session, items: list[dict]) -> dict:
             db.rollback()
             raise
 
-    return {"inserted": inserted, "duplicated": duplicated}
+    return {
+        "inserted": inserted,
+        "duplicated": duplicated,
+        "skipped": skipped,
+    }
 
 
 def save_aws_batch(db: Session, items: list[dict]) -> dict:
     inserted = 0
     duplicated = 0
+    skipped = 0
 
     for item in items:
         station_data = item["station"]
         obs_data = item["observation"]
 
         try:
-            upsert_station(db, station_data)
-            db.flush()
+            station = get_station_from_master(db, station_data["id_station"])
+            if not station:
+                skipped += 1
+                continue
 
             success = insert_aws_observation(db, obs_data)
             if success:
                 inserted += 1
             else:
                 duplicated += 1
-                upsert_station(db, station_data)
-                db.flush()
 
             upsert_station_latest(db, "aws", obs_data)
             db.commit()
@@ -180,28 +189,33 @@ def save_aws_batch(db: Session, items: list[dict]) -> dict:
             db.rollback()
             raise
 
-    return {"inserted": inserted, "duplicated": duplicated}
+    return {
+        "inserted": inserted,
+        "duplicated": duplicated,
+        "skipped": skipped,
+    }
 
 
 def save_aaws_batch(db: Session, items: list[dict]) -> dict:
     inserted = 0
     duplicated = 0
+    skipped = 0
 
     for item in items:
         station_data = item["station"]
         obs_data = item["observation"]
 
         try:
-            upsert_station(db, station_data)
-            db.flush()
+            station = get_station_from_master(db, station_data["id_station"])
+            if not station:
+                skipped += 1
+                continue
 
             success = insert_aaws_observation(db, obs_data)
             if success:
                 inserted += 1
             else:
                 duplicated += 1
-                upsert_station(db, station_data)
-                db.flush()
 
             upsert_station_latest(db, "aaws", obs_data)
             db.commit()
@@ -210,4 +224,8 @@ def save_aaws_batch(db: Session, items: list[dict]) -> dict:
             db.rollback()
             raise
 
-    return {"inserted": inserted, "duplicated": duplicated}
+    return {
+        "inserted": inserted,
+        "duplicated": duplicated,
+        "skipped": skipped,
+    }
