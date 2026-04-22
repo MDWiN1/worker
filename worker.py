@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from db.db_connect import sessionlocal, Base, engine
 from services.fetch_api import fetch_data_api
+from services.status_data import refresh_station_latest_statuses
 from services.parsing_data import (
     parse_station_data,
     parse_arg_observation,
@@ -42,7 +43,7 @@ def build_time_window(minutes_back: int = 20) -> tuple[datetime, datetime]:
 #             "station": station_data,
 #             "observation": obs_data,
 #         })
-# 
+#
 #     return items
 
 def build_items(payload: list[dict], tipe_station: str) -> list[dict]:
@@ -126,6 +127,8 @@ def run_ingest(minutes_back: int = 40):
             f"AAWS -> payload={len(aaws_payload)}, valid={len(aaws_items)}, "
             f"inserted={aaws_result['inserted']}, duplicated={aaws_result['duplicated']}"
         )
+
+        refresh_station_latest_statuses(db)
 
         print("Ingest selesai.")
 
