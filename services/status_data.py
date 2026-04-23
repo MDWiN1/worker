@@ -14,23 +14,23 @@ def compute_status(last_observed_at, interval_detected: str | None) -> str:
     if interval_detected == "1min":
         if diff_minutes <= 3:
             return "ON"
-        elif diff_minutes >= 30:
+        elif diff_minutes <= 60:
             return "DELAY"
         else:
             return "OFF"
 
     if interval_detected == "10min":
-        if diff_minutes <= 15:
+        if diff_minutes <= 30:
             return "ON"
-        elif diff_minutes >= 60:
+        elif diff_minutes <= 90:
             return "DELAY"
         else:
             return "OFF"
 
     # fallback jika unknown
-    if diff_minutes <= 15:
+    if diff_minutes <= 30:
         return "ON"
-    elif diff_minutes >= 60:
+    elif diff_minutes <= 90:
         return "DELAY"
     else:
         return "OFF"
