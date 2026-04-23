@@ -12,25 +12,25 @@ def compute_status(last_observed_at, interval_detected: str | None) -> str:
     diff_minutes = (now_utc - last_observed_at).total_seconds() / 60
 
     if interval_detected == "1min":
-        if diff_minutes <= 3:
+        if diff_minutes <= 60:
             return "ON"
-        elif diff_minutes <= 60:
+        elif diff_minutes <= 120:
             return "DELAY"
         else:
             return "OFF"
 
     if interval_detected == "10min":
-        if diff_minutes <= 30:
+        if diff_minutes <= 60:
             return "ON"
-        elif diff_minutes <= 90:
+        elif diff_minutes <= 120:
             return "DELAY"
         else:
             return "OFF"
 
     # fallback jika unknown
-    if diff_minutes <= 30:
+    if diff_minutes <= 60:
         return "ON"
-    elif diff_minutes <= 90:
+    elif diff_minutes <= 120:
         return "DELAY"
     else:
         return "OFF"
