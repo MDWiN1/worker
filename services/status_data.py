@@ -3,15 +3,40 @@ from sqlalchemy.orm import Session
 from models.latest_data import StationLatest
 from models.stations import Station
 
+SENSOR_COLS = [
+    "rr",
+    "pp_air",
+    "rh_avg",
+    "sr_avg",
+    "sr_max",
+    "wd_avg",
+    "ws_avg",
+    "ws_max",
+    "tt_air_avg",
+    "tt_air_min",
+    "tt_air_max",
+    "ws_50cm",
+    "ws_2m",
+]
 
-def compute_status(last_observed_at, interval_detected: str | None) -> str:
-    if not last_observed_at:
+
+def has_sensor_data(row: StationLatest) -> bool:
+    return any(getattr(row, col, None) is not None for col in SENSOR_COLS)
+
+
+def compute_status(row: StationLatest) -> str:
+    # CASE 1: tidak ada waktu observasi
+    if not row.last_observed_at:
+        return "OFF"
+
+    # CASE 2: ada data API, tapi semua sensor null
+    if not has_sensor_data(row):
         return "OFF"
 
     now_utc = datetime.now(timezone.utc)
-    diff_minutes = (now_utc - last_observed_at).total_seconds() / 60
+    diff_minutes = (now_utc - row.last_observed_at).total_seconds() / 60
 
-    if interval_detected == "1min":
+    if row.interval_detected == "1min":
         if diff_minutes <= 60:
             return "ON"
         elif diff_minutes <= 120:
@@ -19,7 +44,7 @@ def compute_status(last_observed_at, interval_detected: str | None) -> str:
         else:
             return "OFF"
 
-    if interval_detected == "10min":
+    if row.interval_detected == "10min":
         if diff_minutes <= 60:
             return "ON"
         elif diff_minutes <= 120:
@@ -59,9 +84,6 @@ def refresh_station_latest_statuses(db: Session):
     rows = db.query(StationLatest).all()
 
     for row in rows:
-        row.status_realtime = compute_status(
-            last_observed_at=row.last_observed_at,
-            interval_detected=row.interval_detected,
-        )
+        row.status_realtime = compute_status(row)
 
     db.commit()
