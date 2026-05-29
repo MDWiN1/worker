@@ -6,7 +6,7 @@ from models.stations import Station
 
 def compute_status(last_observed_at, interval_detected: str | None) -> str:
     if not last_observed_at:
-        return "NO DATA"
+        return "OFF"
 
     now_utc = datetime.now(timezone.utc)
     diff_minutes = (now_utc - last_observed_at).total_seconds() / 60
@@ -46,7 +46,7 @@ def ensure_station_latest_rows(db: Session):
                 StationLatest(
                     id_station=st.id_station,
                     tipe_station=st.tipe_station,
-                    status_realtime="NO DATA",
+                    status_realtime="OFF",
                 )
             )
 
