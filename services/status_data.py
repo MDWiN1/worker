@@ -39,7 +39,7 @@ def compute_status(row: StationLatest) -> str:
     if row.interval_detected == "1min":
         if diff_minutes <= 60:
             return "ON"
-        elif diff_minutes <= 120:
+        elif diff_minutes <= 1440:
             return "DELAY"
         else:
             return "OFF"
@@ -47,7 +47,7 @@ def compute_status(row: StationLatest) -> str:
     if row.interval_detected == "10min":
         if diff_minutes <= 60:
             return "ON"
-        elif diff_minutes <= 120:
+        elif diff_minutes <= 1440:
             return "DELAY"
         else:
             return "OFF"
