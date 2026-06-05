@@ -55,7 +55,7 @@ def compute_status(row: StationLatest) -> str:
     # fallback jika unknown
     if diff_minutes <= 60:
         return "ON"
-    elif diff_minutes <= 120:
+    elif diff_minutes <= 1440:
         return "DELAY"
     else:
         return "OFF"
