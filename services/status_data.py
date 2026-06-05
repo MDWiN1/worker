@@ -30,11 +30,18 @@ def compute_status(row: StationLatest) -> str:
         return "OFF"
 
     # CASE 2: ada data API, tapi semua sensor null
-    if not has_sensor_data(row):
-        return "OFF"
+    # if not has_sensor_data(row):
+    #     return "DElAY"
 
     now_utc = datetime.now(timezone.utc)
     diff_minutes = (now_utc - row.last_observed_at).total_seconds() / 60
+
+    # New Case: Jika ada data tapi semua sensor null tidak langsung OFF apabila belum lebih 24 jam
+    if not has_sensor_data(row):
+        if diff_minutes <= 1440:
+            return "DELAY"
+        else:
+            return "OFF"
 
     if row.interval_detected == "1min":
         if diff_minutes <= 60:
